@@ -148,17 +148,15 @@ func getCmd() string {
 
 // Start starts the command process
 func Start() {
-	glog.Infof("Restarting ...")
-
-	c := getCmd()
-	cmd = exec.Command(c)
+	c := strings.Fields(getCmd())
+	cmd = exec.Command(c[0], c[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	go cmd.Run()
 
 	time.Sleep(time.Second)
-	glog.Infof("%d %s running...", cmd.Process.Pid, c)
+	glog.Infof("%d %v running...", cmd.Process.Pid, c)
 }
 
 func ifStaticFile(filename string) bool {
