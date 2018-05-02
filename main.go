@@ -23,6 +23,7 @@ var (
 	currpath            string
 	cmd                 *exec.Cmd
 	excludedPaths       StrFlags
+	delay               int64
 	state               sync.Mutex
 	eventTime           = make(map[string]int64)
 	scheduleTime        time.Time
@@ -37,7 +38,7 @@ var (
 )
 
 // NewWatcher starts an fsnotify Watcher on the specified paths
-func NewWatcher(paths []string) {
+func NewWatcher(delay time.Duration, paths []string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		glog.Fatalf("Failed to create watcher: %s", err)
@@ -47,6 +48,7 @@ func NewWatcher(paths []string) {
 		for {
 			select {
 			case e := <-watcher.Events:
+				time.Sleep(delay)
 				isBuild := true
 
 				if ifStaticFile(e.Name) {
@@ -105,7 +107,7 @@ func AutoBuild() {
 		err    error
 		stderr bytes.Buffer
 	)
-	bcmd := exec.Command("make", "devbuild")
+	bcmd := exec.Command("make")
 	bcmd.Stderr = &stderr
 	err = bcmd.Run()
 	if err != nil {
@@ -113,7 +115,7 @@ func AutoBuild() {
 		return
 	}
 
-	glog.Info("Built Successfully!")
+	glog.V(3).Info("Built Successfully!")
 	Restart()
 }
 
@@ -125,17 +127,17 @@ func Kill() {
 		}
 	}()
 	if cmd != nil && cmd.Process != nil {
-		glog.Infof("kill %d\n", cmd.Process.Pid)
+		glog.V(3).Infof("kill %d\n", cmd.Process.Pid)
 		err := cmd.Process.Kill()
 		if err != nil {
-			glog.Errorf("Error while killing cmd process: %s", err)
+			glog.V(3).Infof("Error while killing cmd process: %s", err)
 		}
 	}
 }
 
 // Restart kills the running command process and starts it again
 func Restart() {
-	glog.Infof("Kill running process %s %d\n", FILE(), LINE())
+	glog.V(3).Infof("Kill running process %s %d\n", FILE(), LINE())
 	Kill()
 	go Start()
 }
@@ -156,7 +158,7 @@ func Start() {
 	go cmd.Run()
 
 	time.Sleep(time.Second)
-	glog.Infof("%d %v running...", cmd.Process.Pid, c)
+	glog.V(3).Infof("%d %v running...", cmd.Process.Pid, c)
 }
 
 func ifStaticFile(filename string) bool {
@@ -248,6 +250,7 @@ func init() {
 	currpath, _ = os.Getwd()
 
 	flag.Var(&excludedPaths, "e", "List of paths to exclude.")
+	flag.Int64Var(&delay, "d", 500, "delay time when recv fs notify(Millisecond)")
 }
 
 func main() {
@@ -257,7 +260,7 @@ func main() {
 	excludedPaths = append(excludedPaths, "docs", "swagger", "vendor")
 
 	readAppDirectories(currpath, &paths)
-	NewWatcher(paths)
+	NewWatcher(time.Millisecond*time.Duration(delay), paths)
 	AutoBuild()
 	for {
 		<-exit

@@ -14,7 +14,7 @@ watcher -logtostderr -v 6
 
 when src change below cmd will be called
 ```
-make devbuild && make devrun
+make && make devrun
 ```
 
 ##### e.g. makefile
