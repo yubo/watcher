@@ -174,7 +174,7 @@ func Restart() {
 }
 
 func getCmd() string {
-	cmd := exec.Command("make", "devrun")
+	cmd := exec.Command("make", "-s", "devrun")
 	output, _ := cmd.Output()
 	return strings.TrimSpace(strings.Split(string(output), "\n")[0])
 }
@@ -189,7 +189,7 @@ func Start() {
 	go cmd.Run()
 
 	time.Sleep(time.Second)
-	glog.V(3).Infof("%d %v running...", cmd.Process.Pid, c)
+	glog.V(3).Infof("%v running...", c)
 }
 
 func ifStaticFile(filename string) bool {
