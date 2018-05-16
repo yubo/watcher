@@ -75,11 +75,29 @@ func NewWatcher(delay time.Duration, paths []string) {
 		glog.Fatalf("Failed to create watcher: %s", err)
 	}
 
+	buildEvent := make(chan struct{}, 10)
+
+	go func() {
+		pending := false
+		ticker := time.NewTicker(delay).C
+		for {
+			select {
+			case <-buildEvent:
+				pending = true
+				ticker = time.NewTicker(delay).C
+			case <-ticker:
+				if pending {
+					AutoBuild()
+					pending = false
+				}
+			}
+		}
+	}()
+
 	go func() {
 		for {
 			select {
 			case e := <-watcher.Events:
-				time.Sleep(delay)
 				isBuild := true
 
 				if ifStaticFile(e.Name) {
@@ -104,12 +122,7 @@ func NewWatcher(delay time.Duration, paths []string) {
 
 				if isBuild {
 					glog.V(7).Infof("Event fired: %s", e)
-					go func() {
-						// Wait 1s before autobuild until there is no file change.
-						scheduleTime = time.Now().Add(1 * time.Second)
-						time.Sleep(scheduleTime.Sub(time.Now()))
-						AutoBuild()
-					}()
+					buildEvent <- struct{}{}
 				}
 			case err := <-watcher.Errors:
 				glog.Warningf("Watcher error: %s", err.Error()) // No need to exit here
@@ -119,7 +132,7 @@ func NewWatcher(delay time.Duration, paths []string) {
 
 	glog.Info("Initializing watcher...")
 	for _, path := range paths {
-		glog.Infof("Watching: %s", path)
+		glog.V(3).Infof("Watching: %s", path)
 		err = watcher.Add(path)
 		if err != nil {
 			glog.Fatalf("Failed to watch directory: %s", err)
@@ -142,7 +155,7 @@ func AutoBuild() {
 	bcmd.Stderr = &stderr
 	err = bcmd.Run()
 	if err != nil {
-		glog.Errorf("Failed to build the application: %s", stderr.String())
+		glog.Errorf("Failed to build the application: \n###############################\n%s", stderr.String())
 		return
 	}
 
@@ -242,7 +255,7 @@ func isExcluded(file string) bool {
 			break
 		}
 		if strings.HasPrefix(absFilePath, absP) {
-			glog.Infof("'%s' is not being watched", file)
+			glog.V(1).Infof("'%s' is not being watched", file)
 			return true
 		}
 	}
@@ -281,7 +294,7 @@ func GetFileModTime(path string) int64 {
 	path = strings.Replace(path, "\\", "/", -1)
 	f, err := os.Open(path)
 	if err != nil {
-		glog.Errorf("Failed to open file on '%s': %s", path, err)
+		//glog.Errorf("Failed to open file on '%s': %s", path, err)
 		return time.Now().Unix()
 	}
 	defer f.Close()
