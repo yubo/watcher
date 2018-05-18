@@ -154,8 +154,9 @@ func AutoBuild() {
 	bcmd := exec.Command("make")
 	bcmd.Stderr = &stderr
 	err = bcmd.Run()
+	glog.Info("##################################################################################\n")
 	if err != nil {
-		glog.Errorf("Failed to build the application: \n###############################\n%s", stderr.String())
+		glog.Errorf("Failed to build the application:\n%s", stderr.String())
 		return
 	}
 
