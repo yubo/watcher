@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -130,16 +129,12 @@ func AutoBuild() {
 
 	os.Chdir(currpath)
 
-	var (
-		err    error
-		stderr bytes.Buffer
-	)
-	bcmd := exec.Command("make")
-	bcmd.Stderr = &stderr
-	err = bcmd.Run()
+	_cmd := exec.Command("make")
+	_cmd.Stdout = os.Stdout
+	_cmd.Stderr = os.Stderr
+	err := _cmd.Run()
 	glog.Info("##################################################################################\n")
 	if err != nil {
-		glog.Errorf("Failed to build the application:\n%s", stderr.String())
 		return
 	}
 
@@ -171,8 +166,8 @@ func Restart() {
 }
 
 func getCmd() string {
-	cmd := exec.Command("make", "-s", "devrun")
-	output, _ := cmd.Output()
+	_cmd := exec.Command("make", "-s", "devrun")
+	output, _ := _cmd.Output()
 	return strings.TrimSpace(strings.Split(string(output), "\n")[0])
 }
 
@@ -275,7 +270,7 @@ func GetFileModTime(path string) int64 {
 }
 
 func main() {
-	var paths []string
+	paths := []string{"."}
 
 	flag.Parse()
 
