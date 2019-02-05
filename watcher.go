@@ -181,7 +181,7 @@ func Start() {
 	go func() {
 		err := cmd.Run()
 		if err != nil {
-			glog.Infof("process exit(%v)", err)
+			glog.Infof("process(%s) exit(%v)", strings.Join(c, " "), err)
 		} else {
 			glog.Infof("process exit(0)")
 		}
