@@ -130,14 +130,14 @@ func AutoBuild() {
 	os.Chdir(currpath)
 
 	_cmd := exec.Command("make")
-	_cmd.Stdout = os.Stdout
-	_cmd.Stderr = os.Stderr
-	err := _cmd.Run()
+	output, err := _cmd.CombinedOutput()
 	glog.Info("##################################################################################\n")
 	if err != nil {
+		glog.Error(err)
 		return
 	}
 
+	glog.V(3).Info(string(output))
 	glog.V(3).Info("Built Successfully!")
 	Restart()
 }
