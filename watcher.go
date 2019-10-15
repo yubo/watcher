@@ -69,13 +69,14 @@ func NewWatcher(delay time.Duration, paths []string) {
 
 	go func() {
 		pending := false
-		ticker := time.NewTicker(delay).C
+		ticker := time.NewTicker(delay)
 		for {
 			select {
 			case <-buildEvent:
 				pending = true
-				ticker = time.NewTicker(delay).C
-			case <-ticker:
+				ticker.Stop()
+				ticker = time.NewTicker(delay)
+			case <-ticker.C:
 				if pending {
 					AutoBuild()
 					pending = false
@@ -133,6 +134,7 @@ func AutoBuild() {
 	output, err := _cmd.CombinedOutput()
 	glog.Info("##################################################################################\n")
 	if err != nil {
+		glog.Error(string(output))
 		glog.Error(err)
 		return
 	}
