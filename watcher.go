@@ -22,6 +22,7 @@ var (
 	cmd           *exec.Cmd
 	excludedPaths StrFlags
 	fileExts      StrFlags
+	extraPaths    StrFlags
 	delay         int64
 	state         sync.Mutex
 	eventTime     = make(map[string]int64)
@@ -30,6 +31,7 @@ var (
 
 func init() {
 	currpath, _ = os.Getwd()
+	flag.Var(&extraPaths, "i", "list paths to include extra.")
 	flag.Var(&excludedPaths, "e", "List of paths to exclude.(default [vendor])")
 	flag.Var(&fileExts, "f", "List of file extension(default [.go])")
 	flag.Int64Var(&delay, "d", 500, "delay time when recv fs notify(Millisecond)")
@@ -284,8 +286,11 @@ func main() {
 		fileExts.Set(".go")
 	}
 
+	paths = append(paths, extraPaths...)
+
 	glog.Infof("excludedPaths %v", excludedPaths)
 	glog.Infof("watch file exts %v", fileExts)
+	glog.Infof("include paths %v", paths)
 
 	readAppDirectories(currpath, &paths)
 	NewWatcher(time.Millisecond*time.Duration(delay), paths)
